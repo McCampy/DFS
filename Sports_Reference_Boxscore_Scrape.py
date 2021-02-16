@@ -5,14 +5,14 @@ import pandas as pd
 from bs4 import BeautifulSoup as bs
 import os
 import statistics as stat
+from functools import reduce
 
 
 def scrape_boxscore(date, home_id, away_id):
     """Scrapes the basketball_reference website for daily boxscores of NBA data. Parameters are:
-       date in MM-DD-YYYY format 
-       (01-05-2021 would be 01052021,
+       date in MM-DD-YYYY format (01/05/2021 would be 01052021,
        basket-reference ID of the home team,
-       basket-reference ID of the away team)"""
+       basket-reference ID of the away team."""
 
     # Sets up url to scrape and gets data for home and away boxscores
     date_triple = date.split('-')
@@ -98,7 +98,13 @@ def scrape_boxscore(date, home_id, away_id):
         fp = (df["PTS"].astype(float) + (1.2*df["TRB"].astype(float)) + (1.5*df["AST"].astype(float)) + (3*df["STL"].astype(float)) + (3*df["BLK"].astype(float)) - df["TOV"].astype(float))
         df.insert(4, 'FPTS', fp)
         
-        
+        # Add Positions
+        dfnames = pd.read_csv(r'/Users/jacobplata/Desktop/pp/NBA_Name-Pos.csv')
+        dfs = [df, dfnames] 
+        df_final = reduce(lambda left,right: pd.merge(left,right,on='Starters'), dfs)  
+        pos = df_final["Pos"]
+        df.insert(4, 'Pos', pos)
+    
         print(df)
 
         boxscore_dir = r'/Users/jacobplata/Desktop/pp'
@@ -109,15 +115,15 @@ def scrape_boxscore(date, home_id, away_id):
         games = os.listdir(boxscore_dir + '/' + date)
         game_file = away_id + '_' + home_id + '.csv'
         if game_file not in games or home_away == 1:
-            with open(boxscore_dir + '/' + date + '/' + away_id + '_' + home_id + '.csv', 'a') as f:
+            with open(boxscore_dir + '/' + date + '/' + away_id + '_' + home_id + '.csv', 'a', encoding="utf-8") as f:
                 if home_away == 0:
                     df.to_csv(f, header=True, index=False)
                 else:
                     df.to_csv(f, header=False, index=False)
 
 
-def scrape_all_boxscores(season):
-    """Scrapes all the boxscore data from a single season in the NBA and stores the boxscores
+def scrape_all_boxscores(month):
+    """Scrapes all the boxscore data from a single month in the NBA and stores the boxscores
        in folders by date (MONTH-DAY-YEAR) and
        as a csv file create as such: HOMEID_AWAYID.csv"""
     pass
